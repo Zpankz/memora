@@ -1,4 +1,4 @@
-<h1 align="center"><img src="media/memora_new.gif" width="40" alt="Memora Logo" style="vertical-align: middle;">&nbsp;Memora</h1>
+<h1 align="center"><img src="media/memora_new.gif" width="36" alt="Memora Logo" align="absmiddle"> Memora</h1>
 
 <p align="center">
 <b>Give your AI agents persistent memory</b><br>
