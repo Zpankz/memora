@@ -158,49 +158,14 @@ memory_rebuild_embeddings
 memory_rebuild_crossrefs
 ```
 
-## Neovim Integration
-
-Browse memories directly in Neovim with Telescope. Copy the plugin to your config:
-
-```bash
-# For kickstart.nvim / lazy.nvim
-cp nvim/memora.lua ~/.config/nvim/lua/kickstart/plugins/
-```
-
-**Usage:** Press `<leader>sm` to open the memory browser with fuzzy search and preview.
-
-Requires: `telescope.nvim`, `plenary.nvim`, and `memora` installed in your Python environment.
-
-## Knowledge Graph Export
-
-Export memories as an interactive HTML knowledge graph visualization:
-
-```python
-# Via MCP tool
-memory_export_graph(output_path="~/memories_graph.html", min_score=0.25)
-```
-
-Interactive vis.js graph with tag/section filtering, memory tooltips, Mermaid diagram rendering, and auto-resized image thumbnails. Click nodes to view content, drag to explore.
-
-## Graph Color Scheme
-
-| Type | Color | Meaning |
-|------|-------|---------|
-| **Tags** | Purple shades | Different tags get different purple tones |
-| **Issues** | Red | Open |
-| | Orange | In Progress |
-| | Green | Resolved |
-| | Gray | Won't Fix |
-| **TODOs** | Blue | Open |
-| | Orange | In Progress |
-| | Green | Completed |
-| | Red | Blocked |
-
-Node size reflects connection count (more connections = larger node).
-
 ## Live Graph Server
 
-A built-in HTTP server starts automatically with the MCP server, serving the graph visualization on-demand.
+A built-in HTTP server starts automatically with the MCP server, serving an interactive knowledge graph visualization.
+
+<p>
+<img src="media/ui_details.png" alt="Details Panel" width="400">
+<img src="media/ui_timeline.png" alt="Timeline Panel" width="400">
+</p>
 
 **Access locally:**
 ```
@@ -222,33 +187,46 @@ ssh -L 8765:localhost:8765 user@remote
 }
 ```
 
-Use different ports on different machines to avoid conflicts when forwarding multiple servers.
-
 To disable: add `"--no-graph"` to args in your MCP config.
 
 ### Graph UI Features
 
-The graph visualization includes an interactive right panel with two tabs:
+- **Details Panel** - View memory content, metadata, tags, and related memories
+- **Timeline Panel** - Browse memories chronologically, click to highlight in graph
+- **Real-time Updates** - Graph and timeline update via SSE when memories change
+- **Filters** - Time slider, tag/section dropdowns, zoom controls
+- **Mermaid Rendering** - Code blocks render as diagrams
 
-**Detail Tab:**
-- View full memory content, metadata, and tags
-- See related memories with similarity scores
-- Mermaid diagram rendering for code blocks
-- Auto-resized image thumbnails
+### Node Colors
 
-**Timeline Tab:**
-- Browse all memories in reverse chronological order
-- Each row shows: `#ID - Title` with date badge and Details button
-- Click a memory row to highlight it and its connections in the graph
-- Click "Details" to open the full memory view
-- Selected memory is highlighted with grey background
-- Auto-scrolls to keep selected memory visible
+- 🟣 **Tags** - Purple shades by tag
+- 🔴 **Issues** - Red (open), Orange (in progress), Green (resolved), Gray (won't fix)
+- 🔵 **TODOs** - Blue (open), Orange (in progress), Green (completed), Red (blocked)
 
-**Additional UI:**
-- Version badge in top right corner
-- Time slider for filtering memories by date range
-- Tag/section dropdown filters
-- Zoom and pan controls
+Node size reflects connection count.
+
+## Neovim Integration
+
+Browse memories directly in Neovim with Telescope. Copy the plugin to your config:
+
+```bash
+# For kickstart.nvim / lazy.nvim
+cp nvim/memora.lua ~/.config/nvim/lua/kickstart/plugins/
+```
+
+**Usage:** Press `<leader>sm` to open the memory browser with fuzzy search and preview.
+
+Requires: `telescope.nvim`, `plenary.nvim`, and `memora` installed in your Python environment.
+
+## Knowledge Graph Export (Optional)
+
+For offline viewing, export memories as a static HTML file:
+
+```python
+memory_export_graph(output_path="~/memories_graph.html", min_score=0.25)
+```
+
+This is optional - the Live Graph Server provides the same visualization with real-time updates.
 
 ## LLM Deduplication
 
