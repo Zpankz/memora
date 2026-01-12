@@ -162,10 +162,12 @@ memory_rebuild_crossrefs
 
 A built-in HTTP server starts automatically with the MCP server, serving an interactive knowledge graph visualization.
 
-<p>
-<img src="media/ui_details.png" alt="Details Panel" width="400">
-<img src="media/ui_timeline.png" alt="Timeline Panel" width="400">
-</p>
+<table>
+<tr>
+<td align="center"><img src="media/ui_details.png" alt="Details Panel" width="400"><br><em>Details Panel</em></td>
+<td align="center"><img src="media/ui_timeline.png" alt="Timeline Panel" width="400"><br><em>Timeline Panel</em></td>
+</tr>
+</table>
 
 **Access locally:**
 ```
@@ -193,8 +195,9 @@ To disable: add `"--no-graph"` to args in your MCP config.
 
 - **Details Panel** - View memory content, metadata, tags, and related memories
 - **Timeline Panel** - Browse memories chronologically, click to highlight in graph
+- **Time Slider** - Filter memories by date range, drag to explore history
 - **Real-time Updates** - Graph and timeline update via SSE when memories change
-- **Filters** - Time slider, tag/section dropdowns, zoom controls
+- **Filters** - Tag/section dropdowns, zoom controls
 - **Mermaid Rendering** - Code blocks render as diagrams
 
 ### Node Colors
