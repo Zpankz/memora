@@ -49,7 +49,7 @@ pip install "memora[local]" @ git+https://github.com/agentic-mcp-tools/memora.gi
 ```
 
 <details id="usage">
-<summary><big><strong>Usage</strong></big></summary>
+<summary><big><big><strong>Usage</strong></big></big></summary>
 
 The server runs automatically when configured in Claude Code. Manual invocation:
 
@@ -67,7 +67,7 @@ memora-server --transport streamable-http --host 127.0.0.1 --port 8080
 </details>
 
 <details id="configuration">
-<summary><big><strong>Configuration</strong></big></summary>
+<summary><big><big><strong>Configuration</strong></big></big></summary>
 
 ### Claude Code
 
@@ -130,7 +130,7 @@ Add to `~/.codex/config.toml`:
 </details>
 
 <details id="environment-variables">
-<summary><big><strong>Environment Variables</strong></big></summary>
+<summary><big><big><strong>Environment Variables</strong></big></big></summary>
 
 | Variable               | Description                                                                 |
 |------------------------|-----------------------------------------------------------------------------|
@@ -157,7 +157,7 @@ Add to `~/.codex/config.toml`:
 </details>
 
 <details id="semantic-search--embeddings">
-<summary><big><strong>Semantic Search & Embeddings</strong></big></summary>
+<summary><big><big><strong>Semantic Search & Embeddings</strong></big></big></summary>
 
 Memora supports three embedding backends:
 
@@ -184,7 +184,7 @@ memory_rebuild_crossrefs
 </details>
 
 <details id="live-graph-server">
-<summary><big><strong>Live Graph Server</strong></big></summary>
+<summary><big><big><strong>Live Graph Server</strong></big></big></summary>
 
 A built-in HTTP server starts automatically with the MCP server, serving an interactive knowledge graph visualization.
 
@@ -237,7 +237,7 @@ Node size reflects connection count.
 </details>
 
 <details id="neovim-integration">
-<summary><big><strong>Neovim Integration</strong></big></summary>
+<summary><big><big><strong>Neovim Integration</strong></big></big></summary>
 
 Browse memories directly in Neovim with Telescope. Copy the plugin to your config:
 
@@ -253,7 +253,7 @@ Requires: `telescope.nvim`, `plenary.nvim`, and `memora` installed in your Pytho
 </details>
 
 <details id="knowledge-graph-export">
-<summary><big><strong>Knowledge Graph Export (Optional)</strong></big></summary>
+<summary><big><big><strong>Knowledge Graph Export (Optional)</strong></big></big></summary>
 
 For offline viewing, export memories as a static HTML file:
 
@@ -266,7 +266,7 @@ This is optional - the Live Graph Server provides the same visualization with re
 </details>
 
 <details id="llm-deduplication">
-<summary><big><strong>LLM Deduplication</strong></big></summary>
+<summary><big><big><strong>LLM Deduplication</strong></big></big></summary>
 
 Find and merge duplicate memories using AI-powered semantic comparison:
 
@@ -289,7 +289,7 @@ Works with any OpenAI-compatible API (OpenAI, OpenRouter, Azure, etc.) via `OPEN
 </details>
 
 <details id="memory-automation-tools">
-<summary><big><strong>Memory Automation Tools</strong></big></summary>
+<summary><big><big><strong>Memory Automation Tools</strong></big></big></summary>
 
 Structured tools for common memory types:
 
@@ -307,7 +307,7 @@ memory_create_section(content="Architecture", section="docs", subsection="api")
 </details>
 
 <details id="memory-linking">
-<summary><big><strong>Memory Linking</strong></big></summary>
+<summary><big><big><strong>Memory Linking</strong></big></big></summary>
 
 Manage relationships between memories:
 
