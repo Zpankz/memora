@@ -19,8 +19,7 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 <b><a href="#features">Features</a></b> · <b><a href="#install">Install</a></b> · <b><a href="#usage">Usage</a></b> · <b><a href="#configuration">Config</a></b> · <b><a href="#live-graph-server">Live Graph</a></b> · <b><a href="#semantic-search--embeddings">Semantic Search</a></b> · <b><a href="#llm-deduplication">LLM Deduplication</a></b>
 </p>
 
-<details open>
-<summary><big><strong>Features</strong></big></summary>
+## Features
 
 - 💾 **Persistent Storage** - SQLite-backed database with optional cloud sync (S3, GCS, Azure)
 - 🔍 **Semantic Search** - Vector embeddings (TF-IDF, sentence-transformers, or OpenAI)
@@ -35,8 +34,6 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 - 🕸️ **Knowledge Graph** - Interactive HTML visualization with Mermaid diagram rendering
 - 🌐 **Live Graph Server** - Auto-starts HTTP server for remote access via SSH
 - 📊 **Statistics & Analytics** - Tag usage, trends, and connection insights
-
-</details>
 
 <details>
 <summary><big><strong>Install</strong></big></summary>
