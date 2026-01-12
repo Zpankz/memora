@@ -63,7 +63,10 @@ div.vis-tooltip {
 #panel-tabs .tab:not(.active):hover { color: #c9d1d9; background: #21262d; }
 #tab-detail, #tab-timeline { display: none; }
 #tab-detail.active, #tab-timeline.active { display: block; }
-#timeline-list { max-height: calc(100vh - 120px); overflow-y: auto; }
+#timeline-header { display: flex; justify-content: flex-end; padding: 4px 8px; border-bottom: 1px solid #30363d; }
+#timeline-header .refresh-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 10px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+#timeline-header .refresh-btn:hover { background: #30363d; color: #c9d1d9; }
+#timeline-list { max-height: calc(100vh - 160px); overflow-y: auto; }
 #timeline-list .memory-item { padding: 10px; border-bottom: 1px solid #30363d; cursor: pointer; display: flex; flex-direction: column; }
 #timeline-list .memory-item:hover { background: #21262d; }
 #timeline-list .memory-item.selected { background: #30363d; }
@@ -710,6 +713,8 @@ function hideNodeTooltip() {
 PANEL_JS = """
 var currentPanelMemoryId = null;
 var currentTab = 'detail';
+var timelineRefreshInterval = null;
+var lastTimelineHash = null;
 
 function switchTab(tabName) {
     currentTab = tabName;
@@ -719,9 +724,28 @@ function switchTab(tabName) {
     document.getElementById('tab-timeline').classList.toggle('active', tabName === 'timeline');
     if (tabName === 'timeline') {
         populateTimelineList();
-    } else if (tabName === 'detail' && currentPanelMemoryId) {
-        // Load the current memory details when switching to detail tab
-        loadMemoryToPanel(currentPanelMemoryId);
+        startTimelineAutoRefresh();
+    } else {
+        stopTimelineAutoRefresh();
+        if (tabName === 'detail' && currentPanelMemoryId) {
+            loadMemoryToPanel(currentPanelMemoryId);
+        }
+    }
+}
+
+function startTimelineAutoRefresh() {
+    stopTimelineAutoRefresh();
+    timelineRefreshInterval = setInterval(function() {
+        if (currentTab === 'timeline') {
+            populateTimelineList();
+        }
+    }, 5000);
+}
+
+function stopTimelineAutoRefresh() {
+    if (timelineRefreshInterval) {
+        clearInterval(timelineRefreshInterval);
+        timelineRefreshInterval = null;
     }
 }
 
@@ -743,18 +767,20 @@ function loadMemoryToPanel(memId) {
     }
 }
 
-function populateTimelineList() {
+function populateTimelineList(forceRefresh) {
     // Check if memoriesData exists (static template) or fetch from API (SPA)
     if (typeof memoriesData !== 'undefined') {
-        renderTimelineList(Object.values(memoriesData));
+        renderTimelineList(Object.values(memoriesData), forceRefresh);
     } else {
         // SPA mode - fetch from API
-        document.getElementById('timeline-list').innerHTML = '<div style="padding:20px;color:#8b949e;">Loading...</div>';
+        if (!lastTimelineHash) {
+            document.getElementById('timeline-list').innerHTML = '<div style="padding:20px;color:#8b949e;">Loading...</div>';
+        }
         fetch('/api/memories')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.memories) {
-                    renderTimelineList(data.memories);
+                    renderTimelineList(data.memories, forceRefresh);
                 }
             })
             .catch(function(e) {
@@ -763,10 +789,18 @@ function populateTimelineList() {
     }
 }
 
-function renderTimelineList(memories) {
+function renderTimelineList(memories, forceRefresh) {
     memories.sort(function(a, b) {
         return new Date(b.created) - new Date(a.created);
     });
+
+    // Check if data changed by comparing memory IDs
+    var newHash = memories.map(function(m) { return m.id; }).join(',');
+    if (!forceRefresh && newHash === lastTimelineHash) {
+        return; // No changes, skip re-render
+    }
+    lastTimelineHash = newHash;
+
     var html = memories.map(function(mem) {
         var headline = getMemoryHeadline(mem.content);
         var preview = getMemoryPreview(mem.content);
@@ -1005,6 +1039,7 @@ Duplicates ({len(duplicate_ids)})</div></div>'''
             <div class="content" id="panel-content"></div>
         </div>
         <div id="tab-timeline">
+            <div id="timeline-header"><button class="refresh-btn" onclick="populateTimelineList(true)" title="Refresh">&#x21bb;</button></div>
             <div id="timeline-list"></div>
         </div>
     </div>
@@ -1118,6 +1153,7 @@ def get_spa_html(version: str = "") -> str:
             <div class="content" id="panel-content"></div>
         </div>
         <div id="tab-timeline">
+            <div id="timeline-header"><button class="refresh-btn" onclick="populateTimelineList(true)" title="Refresh">&#x21bb;</button></div>
             <div id="timeline-list"></div>
         </div>
     </div>
