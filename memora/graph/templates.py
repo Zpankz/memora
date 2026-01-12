@@ -63,10 +63,7 @@ div.vis-tooltip {
 #panel-tabs .tab:not(.active):hover { color: #c9d1d9; background: #21262d; }
 #tab-detail, #tab-timeline { display: none; }
 #tab-detail.active, #tab-timeline.active { display: block; }
-#timeline-header { display: flex; justify-content: flex-end; padding: 4px 8px; border-bottom: 1px solid #30363d; }
-#timeline-header .refresh-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 10px; border-radius: 4px; font-size: 14px; cursor: pointer; }
-#timeline-header .refresh-btn:hover { background: #30363d; color: #c9d1d9; }
-#timeline-list { max-height: calc(100vh - 160px); overflow-y: auto; }
+#timeline-list { max-height: calc(100vh - 120px); overflow-y: auto; }
 #timeline-list .memory-item { padding: 10px; border-bottom: 1px solid #30363d; cursor: pointer; display: flex; flex-direction: column; }
 #timeline-list .memory-item:hover { background: #21262d; }
 #timeline-list .memory-item.selected { background: #30363d; }
@@ -713,8 +710,6 @@ function hideNodeTooltip() {
 PANEL_JS = """
 var currentPanelMemoryId = null;
 var currentTab = 'detail';
-var timelineRefreshInterval = null;
-var lastTimelineHash = null;
 
 function switchTab(tabName) {
     currentTab = tabName;
@@ -724,28 +719,8 @@ function switchTab(tabName) {
     document.getElementById('tab-timeline').classList.toggle('active', tabName === 'timeline');
     if (tabName === 'timeline') {
         populateTimelineList();
-        startTimelineAutoRefresh();
-    } else {
-        stopTimelineAutoRefresh();
-        if (tabName === 'detail' && currentPanelMemoryId) {
-            loadMemoryToPanel(currentPanelMemoryId);
-        }
-    }
-}
-
-function startTimelineAutoRefresh() {
-    stopTimelineAutoRefresh();
-    timelineRefreshInterval = setInterval(function() {
-        if (currentTab === 'timeline') {
-            populateTimelineList();
-        }
-    }, 5000);
-}
-
-function stopTimelineAutoRefresh() {
-    if (timelineRefreshInterval) {
-        clearInterval(timelineRefreshInterval);
-        timelineRefreshInterval = null;
+    } else if (tabName === 'detail' && currentPanelMemoryId) {
+        loadMemoryToPanel(currentPanelMemoryId);
     }
 }
 
@@ -767,20 +742,18 @@ function loadMemoryToPanel(memId) {
     }
 }
 
-function populateTimelineList(forceRefresh) {
+function populateTimelineList() {
     // Check if memoriesData exists (static template) or fetch from API (SPA)
     if (typeof memoriesData !== 'undefined') {
-        renderTimelineList(Object.values(memoriesData), forceRefresh);
+        renderTimelineList(Object.values(memoriesData));
     } else {
         // SPA mode - fetch from API
-        if (!lastTimelineHash) {
-            document.getElementById('timeline-list').innerHTML = '<div style="padding:20px;color:#8b949e;">Loading...</div>';
-        }
+        document.getElementById('timeline-list').innerHTML = '<div style="padding:20px;color:#8b949e;">Loading...</div>';
         fetch('/api/memories')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.memories) {
-                    renderTimelineList(data.memories, forceRefresh);
+                    renderTimelineList(data.memories);
                 }
             })
             .catch(function(e) {
@@ -789,17 +762,10 @@ function populateTimelineList(forceRefresh) {
     }
 }
 
-function renderTimelineList(memories, forceRefresh) {
+function renderTimelineList(memories) {
     memories.sort(function(a, b) {
         return new Date(b.created) - new Date(a.created);
     });
-
-    // Check if data changed by comparing memory IDs
-    var newHash = memories.map(function(m) { return m.id; }).join(',');
-    if (!forceRefresh && newHash === lastTimelineHash) {
-        return; // No changes, skip re-render
-    }
-    lastTimelineHash = newHash;
 
     var html = memories.map(function(mem) {
         var headline = getMemoryHeadline(mem.content);
@@ -1039,7 +1005,6 @@ Duplicates ({len(duplicate_ids)})</div></div>'''
             <div class="content" id="panel-content"></div>
         </div>
         <div id="tab-timeline">
-            <div id="timeline-header"><button class="refresh-btn" onclick="populateTimelineList(true)" title="Refresh">&#x21bb;</button></div>
             <div id="timeline-list"></div>
         </div>
     </div>
@@ -1153,7 +1118,6 @@ def get_spa_html(version: str = "") -> str:
             <div class="content" id="panel-content"></div>
         </div>
         <div id="tab-timeline">
-            <div id="timeline-header"><button class="refresh-btn" onclick="populateTimelineList(true)" title="Refresh">&#x21bb;</button></div>
             <div id="timeline-list"></div>
         </div>
     </div>
@@ -1511,6 +1475,11 @@ def get_spa_html(version: str = "") -> str:
 
                     // Clear memory cache for fresh data
                     memoryCache = {{}};
+
+                    // Refresh timeline if on that tab
+                    if (currentTab === 'timeline') {{
+                        populateTimelineList();
+                    }}
                 }} catch (err) {{
                     console.error('Error refreshing graph:', err);
                 }}
