@@ -126,7 +126,9 @@ def _with_connection(func=None, *, writes=False):
                 # Only sync to cloud after write operations
                 if writes:
                     sync_to_cloud()
-                    _schedule_cloud_graph_sync()
+                    # Broadcast update to connected clients
+                    from .cloud_sync import sync_now
+                    sync_now()
                 return result
             finally:
                 conn.close()

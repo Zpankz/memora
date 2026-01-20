@@ -1477,12 +1477,82 @@ div.vis-tooltip {
             }
             document.getElementById('legend-items').innerHTML = legendHtml;
 
-            // Update section items
+            // Update section items with subsections
             var sectionsHtml = '';
             for (var [section, nodeIds] of Object.entries(graphData.sectionToNodes)) {
                 sectionsHtml += '<div class="section-item" data-section="' + section + '" onclick="filterBySection(\'' + section + '\')">' + section + ' (' + nodeIds.length + ')</div>';
+                var sectionPaths = Object.keys(graphData.subsectionToNodes).filter(k => k.startsWith(section + '/')).sort();
+                var rendered = new Set();
+                for (var fullPath of sectionPaths) {
+                    var subPath = fullPath.slice(section.length + 1);
+                    var parts = subPath.split('/');
+                    for (var i = 0; i < parts.length; i++) {
+                        var partial = parts.slice(0, i + 1).join('/');
+                        var renderKey = section + '/' + partial;
+                        if (!rendered.has(renderKey)) {
+                            rendered.add(renderKey);
+                            var indent = '&nbsp;&nbsp;'.repeat(i);
+                            var count = (graphData.subsectionToNodes[renderKey] || []).length;
+                            sectionsHtml += '<div class="subsection-item" data-subsection="' + renderKey + '" onclick="filterBySubsection(\'' + renderKey + '\')" style="padding-left:' + (8 + i*12) + 'px;">' + indent + '\u2514 ' + parts[i] + ' (' + count + ')</div>';
+                        }
+                    }
+                }
             }
             document.getElementById('section-items').innerHTML = sectionsHtml;
+
+            // Update issues legend
+            var issuesHtml = '';
+            if (graphData.statusToNodes && Object.keys(graphData.statusToNodes).length > 0) {
+                issuesHtml = '<div id="issues-legend"><b onclick="filterAllIssues()">Issues</b>';
+                var statusColors = {open: '#ff7b72', 'closed:complete': '#7ee787', 'closed:not_planned': '#8b949e'};
+                for (var [status, nodeIds] of Object.entries(graphData.statusToNodes)) {
+                    var color = statusColors[status] || '#8b949e';
+                    var displayName = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    issuesHtml += '<div class="legend-item issue-status" data-status="' + status + '" onclick="filterByStatus(\'' + status + '\')"><span class="legend-color" style="background:' + color + '"></span>' + displayName + ' (' + nodeIds.length + ')</div>';
+                }
+                if (graphData.issueCategoryToNodes && Object.keys(graphData.issueCategoryToNodes).length > 0) {
+                    issuesHtml += '<div class="issue-categories collapsed"><b>Components</b><span class="legend-toggle" onclick="toggleSection(this)">[+]</span><div class="section-items">';
+                    var components = Object.keys(graphData.issueCategoryToNodes).sort();
+                    for (var component of components) {
+                        var count = graphData.issueCategoryToNodes[component].length;
+                        issuesHtml += '<div class="legend-item issue-category" data-issue-category="' + component + '" onclick="filterByIssueCategory(\'' + component + '\')"><span class="legend-color small" style="background:#8b949e"></span>' + component + ' (' + count + ')</div>';
+                    }
+                    issuesHtml += '</div></div>';
+                }
+                issuesHtml += '</div>';
+            }
+            document.getElementById('issues-legend-items').innerHTML = issuesHtml;
+
+            // Update TODOs legend
+            var todosHtml = '';
+            if (graphData.todoStatusToNodes && Object.keys(graphData.todoStatusToNodes).length > 0) {
+                todosHtml = '<div id="todos-legend"><b onclick="filterAllTodos()">TODOs</b>';
+                var todoStatusColors = {open: '#58a6ff', 'closed:complete': '#7ee787', 'closed:not_planned': '#8b949e'};
+                var todoStatusDisplay = {open: 'Open', 'closed:complete': 'Closed (Complete)', 'closed:not_planned': 'Closed (Not Planned)'};
+                for (var [status, nodeIds] of Object.entries(graphData.todoStatusToNodes)) {
+                    var color = todoStatusColors[status] || '#8b949e';
+                    var displayName = todoStatusDisplay[status] || status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    todosHtml += '<div class="legend-item todo-status" data-todo-status="' + status + '" onclick="filterByTodoStatus(\'' + status + '\')"><span class="legend-color" style="background:' + color + '"></span>' + displayName + ' (' + nodeIds.length + ')</div>';
+                }
+                if (graphData.todoCategoryToNodes && Object.keys(graphData.todoCategoryToNodes).length > 0) {
+                    todosHtml += '<div class="todo-categories collapsed"><b>Categories</b><span class="legend-toggle" onclick="toggleSection(this)">[+]</span><div class="section-items">';
+                    var categories = Object.keys(graphData.todoCategoryToNodes).sort();
+                    for (var category of categories) {
+                        var count = graphData.todoCategoryToNodes[category].length;
+                        todosHtml += '<div class="legend-item todo-category" data-todo-category="' + category + '" onclick="filterByTodoCategory(\'' + category + '\')"><span class="legend-color small" style="background:#8b949e"></span>' + category + ' (' + count + ')</div>';
+                    }
+                    todosHtml += '</div></div>';
+                }
+                todosHtml += '</div>';
+            }
+            document.getElementById('todos-legend-items').innerHTML = todosHtml;
+
+            // Update duplicates legend
+            var duplicatesHtml = '';
+            if (graphData.duplicateIds && graphData.duplicateIds.length > 0) {
+                duplicatesHtml = '<div id="duplicates-legend"><div class="legend-item" onclick="filterByDuplicates()"><span class="legend-color" style="background:#a855f7;border:2px solid #f85149;"></span>Duplicates (' + graphData.duplicateIds.length + ')</div></div>';
+            }
+            document.getElementById('duplicates-legend-items').innerHTML = duplicatesHtml;
 
             // Update timeline if available
             if (graphData.nodeTimestamps && graphData.minDate && graphData.maxDate) {

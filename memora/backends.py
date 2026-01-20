@@ -13,6 +13,7 @@ import os
 import shutil
 import sqlite3
 import tempfile
+import threading
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -842,6 +843,10 @@ class D1Cursor:
 class D1Connection:
     """A connection-like object that talks to Cloudflare D1 via HTTP API."""
 
+    # Class-level session token for read-your-writes consistency across connections
+    _session_token: str = None
+    _session_lock = threading.Lock()
+
     def __init__(self, account_id: str, database_id: str, api_token: str):
         self.account_id = account_id
         self.database_id = database_id
@@ -851,7 +856,7 @@ class D1Connection:
         self._pending_statements = []
 
     def _execute_api(self, sql: str, params: tuple = None) -> dict:
-        """Execute SQL via D1 HTTP API."""
+        """Execute SQL via D1 HTTP API with session affinity for read-your-writes."""
         import urllib.request
         import urllib.error
 
@@ -864,19 +869,34 @@ class D1Connection:
 
         data = json.dumps(body).encode("utf-8")
 
+        headers = {
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json",
+        }
+
+        # Include session token for read-your-writes consistency
+        with D1Connection._session_lock:
+            if D1Connection._session_token:
+                headers["cf-d1-session-token"] = D1Connection._session_token
+
         req = urllib.request.Request(
             url,
             data=data,
-            headers={
-                "Authorization": f"Bearer {self.api_token}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             method="POST",
         )
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 result = json.loads(resp.read().decode())
+
+                # Extract session token from response for future requests
+                # D1 returns this token after writes to enable read-your-writes
+                session_token = resp.headers.get("cf-d1-session-token")
+                if session_token:
+                    with D1Connection._session_lock:
+                        D1Connection._session_token = session_token
+
         except urllib.error.HTTPError as e:
             error_body = e.read().decode() if e.fp else str(e)
             raise RuntimeError(f"D1 API error ({e.code}): {error_body}")

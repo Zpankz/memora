@@ -18,12 +18,19 @@ from urllib.error import URLError
 _THIS_DIR = Path(__file__).parent
 _DEFAULT_SYNC_SCRIPT = _THIS_DIR.parent / "memora-graph" / "scripts" / "sync.sh"
 
-# Configuration from environment
-CLOUD_GRAPH_ENABLED = os.getenv("MEMORA_CLOUD_GRAPH_ENABLED", "").lower() in ("true", "1", "yes")
-CLOUD_GRAPH_WORKER_URL = os.getenv(
-    "MEMORA_CLOUD_GRAPH_WORKER_URL",
-    "https://memora-graph-sync.cloudflare-strategic612.workers.dev"
-)
+# Configuration from environment (evaluated at runtime via functions)
+def _is_cloud_graph_enabled() -> bool:
+    return os.getenv("MEMORA_CLOUD_GRAPH_ENABLED", "").lower() in ("true", "1", "yes")
+
+def _get_worker_url() -> str:
+    return os.getenv(
+        "MEMORA_CLOUD_GRAPH_WORKER_URL",
+        "https://memora-graph-sync.cloudflare-strategic612.workers.dev"
+    )
+
+# Keep for backward compatibility
+CLOUD_GRAPH_ENABLED = _is_cloud_graph_enabled()
+CLOUD_GRAPH_WORKER_URL = _get_worker_url()
 CLOUD_GRAPH_SYNC_SCRIPT = os.getenv("MEMORA_CLOUD_GRAPH_SYNC_SCRIPT", "") or (
     str(_DEFAULT_SYNC_SCRIPT) if _DEFAULT_SYNC_SCRIPT.exists() else ""
 )
@@ -31,7 +38,7 @@ CLOUD_GRAPH_SYNC_SCRIPT = os.getenv("MEMORA_CLOUD_GRAPH_SYNC_SCRIPT", "") or (
 # Debounce settings - batch rapid writes
 _sync_timer: Optional[threading.Timer] = None
 _sync_lock = threading.Lock()
-SYNC_DEBOUNCE_SECONDS = float(os.getenv("MEMORA_CLOUD_GRAPH_DEBOUNCE", "2.0"))
+SYNC_DEBOUNCE_SECONDS = float(os.getenv("MEMORA_CLOUD_GRAPH_DEBOUNCE", "1.0"))
 
 
 def _do_sync() -> None:
@@ -39,19 +46,13 @@ def _do_sync() -> None:
     global _sync_timer
     _sync_timer = None
 
-    if not CLOUD_GRAPH_ENABLED:
+    if not _is_cloud_graph_enabled():
         return
 
     try:
-        # Run the sync script if configured
-        if CLOUD_GRAPH_SYNC_SCRIPT:
-            script_path = Path(CLOUD_GRAPH_SYNC_SCRIPT).expanduser()
-            if script_path.exists():
-                subprocess.run(
-                    [str(script_path), "--remote"],
-                    capture_output=True,
-                    timeout=60,
-                )
+        # Skip sync script when using D1 backend - D1 is the source of truth
+        # The sync script was designed for R2->D1 sync which would overwrite D1 changes
+        # Now we just broadcast to notify clients to fetch fresh data from D1
 
         # Always notify WebSocket clients
         _broadcast_update()
@@ -64,22 +65,19 @@ def _do_sync() -> None:
 def _broadcast_update() -> None:
     """Notify connected WebSocket clients of an update."""
     try:
-        url = f"{CLOUD_GRAPH_WORKER_URL}/broadcast"
+        url = f"{_get_worker_url()}/broadcast"
         req = Request(
             url,
             data=json.dumps({}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urlopen(req, timeout=5) as resp:
-            result = json.loads(resp.read().decode())
-            sent = result.get("sent", 0)
-            if sent > 0:
-                print(f"[cloud_sync] Broadcast sent to {sent} client(s)")
-    except URLError as e:
-        print(f"[cloud_sync] Warning: broadcast failed: {e}")
-    except Exception as e:
-        print(f"[cloud_sync] Warning: broadcast error: {e}")
+        with urlopen(req, timeout=5):
+            pass  # Broadcast successful
+    except URLError:
+        pass  # Ignore broadcast failures
+    except Exception:
+        pass  # Ignore broadcast errors
 
 
 def schedule_sync() -> None:
@@ -90,7 +88,7 @@ def schedule_sync() -> None:
     """
     global _sync_timer
 
-    if not CLOUD_GRAPH_ENABLED:
+    if not _is_cloud_graph_enabled():
         return
 
     with _sync_lock:
@@ -108,7 +106,7 @@ def sync_now() -> None:
     """Perform sync immediately without debouncing."""
     global _sync_timer
 
-    if not CLOUD_GRAPH_ENABLED:
+    if not _is_cloud_graph_enabled():
         return
 
     with _sync_lock:
