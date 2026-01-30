@@ -1990,6 +1990,8 @@ def list_memories(
     order_plain = "created_at DESC"
 
     if query and _fts_enabled(conn):
+        # Sanitize query for FTS5: quote each term to avoid syntax errors
+        fts_query = " ".join(f'"{t}"' for t in query.split() if t)
         # Use full-text search when available. Fall back to LIKE if the query fails.
         try:
             rows = conn.execute(
@@ -2000,21 +2002,32 @@ def list_memories(
                 WHERE f MATCH ?{date_clause_fts}
                 ORDER BY {order_fts}{limit_clause}
                 """,
-                (query, *date_params, *limit_params),
+                (fts_query, *date_params, *limit_params),
             ).fetchall()
         except sqlite3.OperationalError:
             rows = []
     elif query:
-        pattern = f"%{query}%"
-        rows = conn.execute(
-            f"""
-            SELECT {cols_plain}
-            FROM memories
-            WHERE (content LIKE ? OR tags LIKE ? OR metadata LIKE ?){date_clause_plain}
-            ORDER BY {order_plain}{limit_clause}
-            """,
-            (pattern, pattern, pattern, *date_params, *limit_params),
-        ).fetchall()
+        # Search each word individually to avoid LIKE pattern complexity limits
+        words = [w for w in query.split() if w]
+        if words:
+            word_clauses = " AND ".join(
+                "(content LIKE ? OR tags LIKE ? OR metadata LIKE ?)" for _ in words
+            )
+            word_params: list = []
+            for w in words:
+                p = f"%{w}%"
+                word_params.extend([p, p, p])
+            rows = conn.execute(
+                f"""
+                SELECT {cols_plain}
+                FROM memories
+                WHERE ({word_clauses}){date_clause_plain}
+                ORDER BY {order_plain}{limit_clause}
+                """,
+                (*word_params, *date_params, *limit_params),
+            ).fetchall()
+        else:
+            rows = []
     else:
         where_clause = " WHERE 1=1" + date_clause_plain if date_clause_plain else ""
         rows = conn.execute(
@@ -2025,16 +2038,27 @@ def list_memories(
     # If the FTS search yielded nothing because of an SQLite error (e.g. malformed query)
     # fall back to a LIKE search for resilience.
     if query and _fts_enabled(conn) and not rows:
-        pattern = f"%{query}%"
-        rows = conn.execute(
-            f"""
-            SELECT {cols_plain}
-            FROM memories
-            WHERE (content LIKE ? OR tags LIKE ? OR metadata LIKE ?){date_clause_plain}
-            ORDER BY {order_plain}{limit_clause}
-            """,
-            (pattern, pattern, pattern, *date_params, *limit_params),
-        ).fetchall()
+        words = [w for w in query.split() if w]
+        if words:
+            word_clauses = " ".join(
+                "AND (content LIKE ? OR tags LIKE ? OR metadata LIKE ?)" for _ in words
+            )
+            word_params_fb: list = []
+            for w in words:
+                p = f"%{w}%"
+                word_params_fb.extend([p, p, p])
+            try:
+                rows = conn.execute(
+                    f"""
+                    SELECT {cols_plain}
+                    FROM memories
+                    WHERE 1=1 {word_clauses}{date_clause_plain}
+                    ORDER BY {order_plain}{limit_clause}
+                    """,
+                    (*word_params_fb, *date_params, *limit_params),
+                ).fetchall()
+            except sqlite3.OperationalError:
+                rows = []
 
     records: List[Dict[str, Any]] = []
     for row in rows:
