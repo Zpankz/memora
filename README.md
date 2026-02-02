@@ -21,18 +21,23 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 
 ## Features
 
-- 💾 **Persistent Storage** - SQLite-backed database with optional cloud sync (S3, GCS, Azure)
-- 🔍 **Semantic Search** - Vector embeddings (TF-IDF, sentence-transformers, or OpenAI)
-- 🤖 **LLM Deduplication** - Find and merge duplicate memories with AI-powered comparison
-- ⚡ **Memory Automation** - Structured tools for TODOs, issues, and section placeholders
-- 🔗 **Memory Linking** - Typed edges, importance boosting, and cluster detection
-- 📡 **Event Notifications** - Poll-based system for inter-agent communication
-- 🎯 **Advanced Queries** - Full-text search, date ranges, tag filters (AND/OR/NOT)
-- 🔀 **Cross-references** - Auto-linked related memories based on similarity
-- 📂 **Hierarchical Organization** - Explore memories by section/subsection
+**Core Storage**
+- 💾 **Persistent Storage** - SQLite with optional cloud sync (S3, R2, D1)
+- 📂 **Hierarchical Organization** - Section/subsection structure with auto-hierarchy assignment
 - 📦 **Export/Import** - Backup and restore with merge strategies
-- 🕸️ **Knowledge Graph** - Interactive HTML visualization with Mermaid diagram rendering
-- 🌐 **Live Graph Server** - Auto-starts HTTP server for remote access via SSH
+
+**Search & Intelligence**
+- 🔍 **Semantic Search** - Vector embeddings (TF-IDF, sentence-transformers, OpenAI)
+- 🎯 **Advanced Queries** - Full-text, date ranges, tag filters (AND/OR/NOT), hybrid search
+- 🔀 **Cross-references** - Auto-linked related memories based on similarity
+- 🤖 **LLM Deduplication** - Find and merge duplicates with AI-powered comparison
+- 🔗 **Memory Linking** - Typed edges, importance boosting, and cluster detection
+
+**Tools & Visualization**
+- ⚡ **Memory Automation** - Structured tools for TODOs, issues, and sections
+- 🕸️ **Knowledge Graph** - Interactive visualization with Mermaid rendering and cluster overlays
+- 🌐 **Live Graph Server** - Built-in HTTP server with cloud-hosted option (D1/Pages)
+- 📡 **Event Notifications** - Poll-based system for inter-agent communication
 - 📊 **Statistics & Analytics** - Tag usage, trends, and connection insights
 
 ## Install
