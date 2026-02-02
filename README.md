@@ -16,7 +16,7 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 </p>
 
 <p align="center">
-<b><a href="#features">Features</a></b> · <b><a href="#install">Install</a></b> · <b><a href="#usage">Usage</a></b> · <b><a href="#configuration">Config</a></b> · <b><a href="#live-graph-server">Live Graph</a></b> · <b><a href="#semantic-search--embeddings">Semantic Search</a></b> · <b><a href="#llm-deduplication">LLM Deduplication</a></b>
+<b><a href="#features">Features</a></b> · <b><a href="#install">Install</a></b> · <b><a href="#usage">Usage</a></b> · <b><a href="#configuration">Config</a></b> · <b><a href="#live-graph-server">Live Graph</a></b> · <b><a href="#cloud-graph">Cloud Graph</a></b> · <b><a href="#semantic-search--embeddings">Semantic Search</a></b> · <b><a href="#llm-deduplication">LLM Dedup</a></b> · <b><a href="#memory-linking">Linking</a></b> · <b><a href="#neovim-integration">Neovim</a></b>
 </p>
 
 ## Features
