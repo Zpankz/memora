@@ -261,35 +261,6 @@ Node size reflects connection count.
 
 </details>
 
-<details id="neovim-integration">
-<summary><big><big><strong>Neovim Integration</strong></big></big></summary>
-
-Browse memories directly in Neovim with Telescope. Copy the plugin to your config:
-
-```bash
-# For kickstart.nvim / lazy.nvim
-cp nvim/memora.lua ~/.config/nvim/lua/kickstart/plugins/
-```
-
-**Usage:** Press `<leader>sm` to open the memory browser with fuzzy search and preview.
-
-Requires: `telescope.nvim`, `plenary.nvim`, and `memora` installed in your Python environment.
-
-</details>
-
-<details id="knowledge-graph-export">
-<summary><big><big><strong>Knowledge Graph Export (Optional)</strong></big></big></summary>
-
-For offline viewing, export memories as a static HTML file:
-
-```python
-memory_export_graph(output_path="~/memories_graph.html", min_score=0.25)
-```
-
-This is optional - the Live Graph Server provides the same visualization with real-time updates.
-
-</details>
-
 <details id="cloud-graph">
 <summary><big><big><strong>Cloud Graph (Recommended for D1)</strong></big></big></summary>
 
@@ -403,5 +374,34 @@ memory_boost(memory_id=42, boost_amount=0.5)
 # Detect clusters of related memories
 memory_clusters(min_cluster_size=2, min_score=0.3)
 ```
+
+</details>
+
+<details id="knowledge-graph-export">
+<summary><big><big><strong>Knowledge Graph Export (Optional)</strong></big></big></summary>
+
+For offline viewing, export memories as a static HTML file:
+
+```python
+memory_export_graph(output_path="~/memories_graph.html", min_score=0.25)
+```
+
+This is optional - the Live Graph Server provides the same visualization with real-time updates.
+
+</details>
+
+<details id="neovim-integration">
+<summary><big><big><strong>Neovim Integration</strong></big></big></summary>
+
+Browse memories directly in Neovim with Telescope. Copy the plugin to your config:
+
+```bash
+# For kickstart.nvim / lazy.nvim
+cp nvim/memora.lua ~/.config/nvim/lua/kickstart/plugins/
+```
+
+**Usage:** Press `<leader>sm` to open the memory browser with fuzzy search and preview.
+
+Requires: `telescope.nvim`, `plenary.nvim`, and `memora` installed in your Python environment.
 
 </details>
