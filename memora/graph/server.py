@@ -12,8 +12,10 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from sse_starlette.sse import EventSourceResponse
 
+import json
+from importlib.resources import files as _pkg_files
+
 from .data import export_graph_html, get_graph_data, get_memory_for_api
-from .templates import get_spa_html
 from ..storage import connect, update_memory
 
 def _get_memora_version() -> str:
@@ -111,7 +113,21 @@ def start_graph_server(host: str, port: int) -> None:
     from starlette.applications import Starlette
     from starlette.routing import Route
 
-    GRAPH_HTML = get_spa_html(version=_get_memora_version())
+    def _load_spa_html(version: str) -> str:
+        html = _pkg_files("memora.graph").joinpath("index.html").read_text("utf-8")
+        config = json.dumps({
+            "version": version,
+            "r2Prefix": "/r2/",
+            "dbSelector": False,
+            "wsUrl": None,
+            "sseUrl": "/api/events",
+        })
+        return html.replace(
+            "</head>",
+            f"<script>window.MEMORA_CONFIG={config};</script>\n</head>",
+        )
+
+    GRAPH_HTML = _load_spa_html(version=_get_memora_version())
 
     async def graph_handler(request: Request):
         """Serve the static graph SPA."""

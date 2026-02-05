@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memora"
-version = "0.2.19.2"
+version = "0.2.20.1"
 description = "MCP-compatible memory server backed by SQLite"
 license = "MIT"
 readme = "README.md"
@@ -33,3 +33,6 @@ memora-server = "memora.server:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["memora*"]
+
+[tool.setuptools.package-data]
+"memora.graph" = ["index.html"]
