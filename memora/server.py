@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import re
-from collections.abc import Mapping, Sequence
 from typing import Any, Dict, List, Optional
 
 from mcp.server.fastmcp import FastMCP
-from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
 
 from .storage import (
     add_memory,
@@ -44,6 +42,14 @@ from .storage import (
     EDGE_TYPES,
 )
 from .cloud_sync import schedule_sync as _schedule_cloud_graph_sync
+from .hierarchy import (
+    build_hierarchy_tree,
+    build_tag_hierarchy,
+    extract_hierarchy_path,
+    find_similar_paths,
+    get_existing_hierarchy_paths,
+    suggest_hierarchy_from_similar,
+)
 
 # Content type inference patterns
 TYPE_PATTERNS: List[tuple[str, str]] = [
@@ -85,11 +91,10 @@ def _suggest_tags(content: str, inferred_type: Optional[str]) -> List[str]:
     return suggestions
 
 
-from .graph import (
-    export_graph_html,
-    register_graph_routes,
-    start_graph_server,
-)
+from .graph import export_graph_html, start_graph_server
+
+
+logger = logging.getLogger(__name__)
 
 
 def _read_int_env(var_name: str, fallback: int) -> int:
@@ -108,9 +113,6 @@ DEFAULT_PORT = _read_int_env("MEMORA_PORT", 8000)
 DEFAULT_GRAPH_PORT = _read_int_env("MEMORA_GRAPH_PORT", 8765)
 
 mcp = FastMCP("Memory MCP Server", host=DEFAULT_HOST, port=DEFAULT_PORT)
-
-# Register graph visualization routes
-register_graph_routes(mcp)
 
 
 def _with_connection(func=None, *, writes=False):
@@ -314,224 +316,6 @@ def _import_memories(conn, data: List[Dict[str, Any]], strategy: str):
     return import_memories(conn, data, strategy)
 
 
-def _build_tag_hierarchy(tags):
-    root = {"name": "root", "path": [], "children": {}, "tags": []}
-    for tag in tags:
-        parts = tag.split('.')
-        node = root
-        if not parts:
-            continue
-        for idx, part in enumerate(parts):
-            children = node.setdefault("children", {})
-            if part not in children:
-                children[part] = {
-                    "name": part,
-                    "path": node["path"] + [part],
-                    "children": {},
-                    "tags": []
-                }
-            node = children[part]
-        node.setdefault("tags", []).append(tag)
-    return _collapse_tag_tree(root)
-
-
-def _collapse_tag_tree(node):
-    children_map = node.get("children", {})
-    children_list = [_collapse_tag_tree(child) for child in children_map.values()]
-    node["children"] = children_list
-    node["count"] = len(node.get("tags", [])) + sum(child["count"] for child in children_list)
-    return {key: value for key, value in node.items() if key != "children" or value}
-
-
-def _extract_hierarchy_path(metadata: Optional[Any]) -> List[str]:
-    if not isinstance(metadata, Mapping):
-        return []
-
-    hierarchy = metadata.get("hierarchy")
-    if isinstance(hierarchy, Mapping):
-        raw_path = hierarchy.get("path")
-        if isinstance(raw_path, Sequence) and not isinstance(raw_path, (str, bytes)):
-            return [str(part) for part in raw_path if part is not None]
-
-    path: List[str] = []
-    section = metadata.get("section")
-    if section is not None:
-        path.append(str(section))
-        subsection = metadata.get("subsection")
-        if subsection is not None:
-            path.append(str(subsection))
-    return path
-
-
-def _suggest_hierarchy_from_similar(
-    similar_memories: List[Dict[str, Any]],
-    max_suggestions: int = 3,
-) -> List[Dict[str, Any]]:
-    """Suggest hierarchy placement based on where similar memories are organized.
-
-    Args:
-        similar_memories: List of similar memory results with scores
-        max_suggestions: Maximum number of hierarchy suggestions
-
-    Returns:
-        List of hierarchy suggestions with paths, scores, and example memory IDs
-    """
-    # Count hierarchy paths from similar memories, weighted by similarity score
-    path_scores: Dict[tuple, float] = {}
-    path_examples: Dict[tuple, List[int]] = {}
-
-    for item in similar_memories:
-        if not item:
-            continue
-        memory_id = item.get("id")
-        score = item.get("score", 0)
-
-        # Get full memory to extract hierarchy
-        full_memory = _get_memory(memory_id)
-        if not full_memory:
-            continue
-
-        path = _extract_hierarchy_path(full_memory.get("metadata"))
-        if not path:
-            continue
-
-        path_tuple = tuple(path)
-        path_scores[path_tuple] = path_scores.get(path_tuple, 0) + score
-        if path_tuple not in path_examples:
-            path_examples[path_tuple] = []
-        path_examples[path_tuple].append(memory_id)
-
-    if not path_scores:
-        return []
-
-    # Sort by weighted score
-    sorted_paths = sorted(path_scores.items(), key=lambda x: x[1], reverse=True)
-
-    suggestions = []
-    for path_tuple, total_score in sorted_paths[:max_suggestions]:
-        path_list = list(path_tuple)
-        suggestions.append({
-            "path": path_list,
-            "section": path_list[0] if path_list else None,
-            "subsection": "/".join(path_list[1:]) if len(path_list) > 1 else None,
-            "confidence": round(total_score / len(similar_memories), 2),
-            "similar_memory_ids": path_examples[path_tuple][:3],
-        })
-
-    return suggestions
-
-
-def _compact_memory(memory: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Return a compact representation of a memory (id, preview, tags)."""
-    if memory is None:
-        return None
-    content = memory.get("content", "")
-    preview = content[:80] + "..." if len(content) > 80 else content
-    return {
-        "id": memory.get("id"),
-        "preview": preview,
-        "tags": memory.get("tags", []),
-    }
-
-
-def _get_existing_hierarchy_paths() -> List[List[str]]:
-    """Get all unique hierarchy paths from existing memories."""
-    items = _list_memories(None, None, None, 0, None, None, None, None, None)
-    paths_set: set = set()
-    for memory in items:
-        if memory is None:
-            continue
-        path = _extract_hierarchy_path(memory.get("metadata"))
-        if path:
-            # Add the full path and all parent paths
-            for i in range(1, len(path) + 1):
-                paths_set.add(tuple(path[:i]))
-    return sorted([list(p) for p in paths_set], key=lambda x: (len(x), x))
-
-
-def _find_similar_paths(new_path: List[str], existing_paths: List[List[str]]) -> List[List[str]]:
-    """Find existing paths similar to new_path - siblings or paths with similar names."""
-    if not new_path or not existing_paths:
-        return []
-
-    suggestions = []
-    new_path_lower = [p.lower() for p in new_path]
-    new_parent = new_path[:-1] if len(new_path) > 1 else []
-    new_leaf = new_path_lower[-1] if new_path else ""
-
-    for existing in existing_paths:
-        existing_lower = [p.lower() for p in existing]
-        existing_parent = existing[:-1] if len(existing) > 1 else []
-        existing_leaf = existing_lower[-1] if existing else ""
-
-        # Priority 1: Same parent, different leaf (siblings)
-        if existing_parent == new_parent and existing_lower != new_path_lower:
-            # Check if leaf names are similar (substring match)
-            if new_leaf in existing_leaf or existing_leaf in new_leaf:
-                if existing not in suggestions:
-                    suggestions.insert(0, existing)  # High priority
-                continue
-
-        # Priority 2: Same parent (show siblings)
-        if existing_parent == new_parent and existing not in suggestions:
-            suggestions.append(existing)
-            continue
-
-        # Priority 3: Substring match in leaf (e.g., "background" matches "2. background")
-        if new_leaf and existing_leaf:
-            if new_leaf in existing_leaf or existing_leaf in new_leaf:
-                if existing not in suggestions:
-                    suggestions.append(existing)
-
-    return suggestions[:5]  # Limit to 5 suggestions
-
-
-def _build_hierarchy_tree(memories: List[Dict[str, Any]], include_root: bool = False, compact: bool = True) -> Any:
-    root: Dict[str, Any] = {
-        "name": "root",
-        "path": [],
-        "memories": [],
-        "children": {},
-    }
-
-    for memory in memories:
-        path = _extract_hierarchy_path(memory.get("metadata"))
-        node = root
-        if not path:
-            mem_data = _compact_memory(memory) if compact else dict(memory)
-            if not compact:
-                mem_data["hierarchy_path"] = node["path"]
-            node["memories"].append(mem_data)
-            continue
-
-        for part in path:
-            children: Dict[str, Any] = node.setdefault("children", {})
-            if part not in children:
-                children[part] = {
-                    "name": part,
-                    "path": node["path"] + [part],
-                    "memories": [],
-                    "children": {},
-                }
-            node = children[part]
-        mem_data = _compact_memory(memory) if compact else dict(memory)
-        if not compact:
-            mem_data["hierarchy_path"] = node["path"]
-        node["memories"].append(mem_data)
-
-    def collapse(node: Dict[str, Any]) -> Dict[str, Any]:
-        children_map: Dict[str, Any] = node.get("children", {})
-        children_list = [collapse(child) for child in children_map.values()]
-        node["children"] = children_list
-        node["count"] = len(node.get("memories", [])) + sum(child["count"] for child in children_list)
-        return node
-
-    collapsed = collapse(root)
-    if include_root:
-        return collapsed
-    return collapsed["children"]
-
-
 @mcp.tool()
 async def memory_create(
     content: str,
@@ -550,8 +334,14 @@ async def memory_create(
         similarity_threshold: Minimum similarity score for suggestions (default: 0.2)
     """
     # Check hierarchy path BEFORE creating to detect new paths
-    new_path = _extract_hierarchy_path(metadata)
-    existing_paths = _get_existing_hierarchy_paths() if new_path else []
+    new_path = extract_hierarchy_path(metadata)
+    existing_paths = (
+        get_existing_hierarchy_paths(
+            _list_memories(None, None, None, 0, None, None, None, None, None)
+        )
+        if new_path
+        else []
+    )
     path_is_new = bool(new_path) and (new_path not in existing_paths)
 
     # Initialize warnings dict
@@ -563,8 +353,8 @@ async def memory_create(
         redacted_content, secrets_redacted = _redact_secrets(redacted_content)
         if secrets_redacted:
             warnings["secrets_redacted"] = secrets_redacted
-    except Exception:
-        pass  # Don't fail on redaction errors
+    except Exception as exc:
+        logger.warning("Secret redaction failed, storing original content: %s", exc)
 
     try:
         record = _create_memory(content=redacted_content, metadata=metadata, tags=tags or [])
@@ -575,7 +365,7 @@ async def memory_create(
 
     # Warn if a new hierarchy path was created and suggest similar existing paths
     if path_is_new:
-        similar = _find_similar_paths(new_path, existing_paths)
+        similar = find_similar_paths(new_path, existing_paths)
         if similar:
             warnings["new_hierarchy_path"] = f"New hierarchy path created: {new_path}"
             result["existing_similar_paths"] = similar
@@ -622,7 +412,10 @@ async def memory_create(
         # Suggest hierarchy placement based on related memories (cross-refs)
         # (only if user didn't provide a hierarchy path)
         if not new_path and related_memories:
-            hierarchy_suggestions = _suggest_hierarchy_from_similar(related_memories)
+            hierarchy_suggestions = suggest_hierarchy_from_similar(
+                related_memories,
+                get_memory_by_id=_get_memory,
+            )
             if hierarchy_suggestions:
                 top = hierarchy_suggestions[0]
                 if top.get("confidence", 0) >= AUTO_HIERARCHY_THRESHOLD:
@@ -658,8 +451,12 @@ async def memory_create(
 
         if suggestions:
             result["suggestions"] = suggestions
-    except Exception:
-        pass  # Don't fail on type inference errors
+    except Exception as exc:
+        logger.warning(
+            "Memory suggestion pipeline failed for memory id=%s: %s",
+            (record or {}).get("id"),
+            exc,
+        )
 
     _schedule_cloud_graph_sync()
     return result
@@ -999,7 +796,7 @@ async def memory_tag_hierarchy(include_root: bool = False) -> Dict[str, Any]:
     """Return stored tags organised as a namespace hierarchy."""
 
     tags = _collect_tags()
-    tree = _build_tag_hierarchy(tags)
+    tree = build_tag_hierarchy(tags)
     if not include_root and isinstance(tree, dict):
         tree = tree.get("children", [])
     return {"count": len(tags), "hierarchy": tree}
@@ -1042,7 +839,7 @@ async def memory_hierarchy(
     except ValueError as exc:
         return {"error": "invalid_filters", "message": str(exc)}
 
-    hierarchy = _build_hierarchy_tree(items, include_root=include_root, compact=compact)
+    hierarchy = build_hierarchy_tree(items, include_root=include_root, compact=compact)
     return {"count": len(items), "hierarchy": hierarchy}
 
 
@@ -1527,6 +1324,7 @@ async def memory_upload_image(
         }
 
     except Exception as e:
+        logger.error("Failed to upload image '%s' for memory %s: %s", file_path, memory_id, e)
         return {"error": "upload_failed", "message": str(e)}
 
 
@@ -1613,6 +1411,12 @@ def _migrate_images_to_r2(conn, dry_run: bool = False) -> Dict[str, Any]:
                 results["migrated_images"] += 1
                 updated = True
             except Exception as e:
+                logger.warning(
+                    "Failed migrating image memory_id=%s image_index=%s: %s",
+                    memory_id,
+                    idx,
+                    e,
+                )
                 results["errors"].append({
                     "memory_id": memory_id,
                     "image_index": idx,
@@ -1831,6 +1635,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             conn.close()
             print("Database ready.", file=sys.stderr)
         except Exception as e:
+            logger.warning("Database pre-warm failed: %s", e)
             print(f"Warning: Database pre-warm failed: {e}", file=sys.stderr)
 
         # Start graph visualization server unless disabled

@@ -144,7 +144,7 @@ Now any memory create/update/delete will automatically sync to the cloud graph a
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `MEMORA_CLOUD_GRAPH_ENABLED` | Enable auto-sync | `false` |
-| `MEMORA_CLOUD_GRAPH_WORKER_URL` | WebSocket worker URL | Auto-detected |
+| `MEMORA_CLOUD_GRAPH_WORKER_URL` | WebSocket worker URL | _(required when cloud graph sync is enabled)_ |
 | `MEMORA_CLOUD_GRAPH_SYNC_SCRIPT` | Path to sync script | Auto-detected |
 | `MIN_EDGE_SCORE` | Minimum similarity for graph edges | `0.40` |
 

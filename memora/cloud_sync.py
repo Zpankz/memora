@@ -6,13 +6,16 @@ and notify connected WebSocket clients of updates.
 from __future__ import annotations
 
 import json
+import logging
 import os
-import subprocess
 import threading
 from pathlib import Path
 from typing import Optional
-from urllib.request import Request, urlopen
 from urllib.error import URLError
+from urllib.request import Request, urlopen
+
+
+logger = logging.getLogger(__name__)
 
 # Auto-detect sync script location (sibling memora-graph directory)
 _THIS_DIR = Path(__file__).parent
@@ -23,10 +26,7 @@ def _is_cloud_graph_enabled() -> bool:
     return os.getenv("MEMORA_CLOUD_GRAPH_ENABLED", "").lower() in ("true", "1", "yes")
 
 def _get_worker_url() -> str:
-    return os.getenv(
-        "MEMORA_CLOUD_GRAPH_WORKER_URL",
-        "https://memora-graph-sync.cloudflare-strategic612.workers.dev"
-    )
+    return os.getenv("MEMORA_CLOUD_GRAPH_WORKER_URL", "").strip()
 
 # Keep for backward compatibility
 CLOUD_GRAPH_ENABLED = _is_cloud_graph_enabled()
@@ -59,14 +59,18 @@ def _do_sync() -> None:
 
     except Exception:
         # Don't fail the main operation if sync fails
-        pass
+        logger.exception("Cloud graph sync failed")
 
 
 def _broadcast_update() -> None:
     """Notify connected WebSocket clients of an update."""
-    import sys
+    worker_url = _get_worker_url()
+    if not worker_url:
+        logger.debug("Skipping cloud graph broadcast; MEMORA_CLOUD_GRAPH_WORKER_URL is not set")
+        return
+
+    url = f"{worker_url}/broadcast"
     try:
-        url = f"{_get_worker_url()}/broadcast"
         req = Request(
             url,
             data=json.dumps({}).encode("utf-8"),
@@ -77,11 +81,11 @@ def _broadcast_update() -> None:
             method="POST",
         )
         with urlopen(req, timeout=5) as resp:
-            print(f"[memora] Cloud graph broadcast OK ({resp.status})", file=sys.stderr)
+            logger.debug("Cloud graph broadcast OK (%s)", resp.status)
     except URLError as e:
-        print(f"[memora] Cloud graph broadcast failed: {e}", file=sys.stderr)
+        logger.warning("Cloud graph broadcast failed for %s: %s", url, e)
     except Exception as e:
-        print(f"[memora] Cloud graph broadcast error: {e}", file=sys.stderr)
+        logger.exception("Unexpected cloud graph broadcast error for %s: %s", url, e)
 
 
 def schedule_sync() -> None:

@@ -1,12 +1,11 @@
 """HTTP server and routes for graph visualization."""
 
 import asyncio
-import os
+import logging
 import socket
 import sys
 import threading
 from importlib.metadata import version as get_version
-from typing import TYPE_CHECKING
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
@@ -15,17 +14,19 @@ from sse_starlette.sse import EventSourceResponse
 import json
 from importlib.resources import files as _pkg_files
 
-from .data import export_graph_html, get_graph_data, get_memory_for_api
+from .data import get_graph_data, get_memory_for_api
 from ..storage import connect, update_memory
+
+
+logger = logging.getLogger(__name__)
+
 
 def _get_memora_version() -> str:
     try:
         return get_version("memora")
-    except Exception:
+    except Exception as exc:
+        logger.debug("Unable to read memora package version: %s", exc)
         return ""
-
-if TYPE_CHECKING:
-    from mcp.server.fastmcp import FastMCP
 
 
 def _normalize_host_for_connect(host: str) -> str:
@@ -63,30 +64,10 @@ def _check_port_status(host: str, port: int) -> str:
             # Check for our specific response structure
             if '"nodes"' in data or '"count"' in data:
                 return "memora"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Port %s probe could not verify memora server: %s", port, exc)
 
     return "other"
-
-
-def register_graph_routes(mcp: "FastMCP") -> None:
-    """Register graph-related routes on the MCP server.
-
-    Args:
-        mcp: The FastMCP server instance.
-    """
-
-    @mcp.custom_route("/graph", methods=["GET"])
-    async def serve_graph(request: Request):
-        """Serve the knowledge graph visualization via HTTP."""
-        try:
-            min_score = float(request.query_params.get("min_score", 0.25))
-            result = export_graph_html(output_path=None, min_score=min_score)
-            if "error" in result:
-                return JSONResponse(result, status_code=404)
-            return HTMLResponse(result["html"])
-        except Exception as e:
-            return JSONResponse({"error": str(e)}, status_code=500)
 
 
 def start_graph_server(host: str, port: int) -> None:
@@ -141,6 +122,7 @@ def start_graph_server(host: str, port: int) -> None:
             result = get_graph_data(min_score, rebuild=rebuild)
             return JSONResponse(result)
         except Exception as e:
+            logger.exception("Graph API request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     async def api_memory(request: Request):
@@ -152,6 +134,7 @@ def start_graph_server(host: str, port: int) -> None:
                 return JSONResponse(result, status_code=404)
             return JSONResponse(result)
         except Exception as e:
+            logger.exception("Graph memory API request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     async def api_memories_list(request: Request):
@@ -186,6 +169,7 @@ def start_graph_server(host: str, port: int) -> None:
                 "offset": offset,
             })
         except Exception as e:
+            logger.exception("Graph memories list API request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     async def api_actions(request: Request):
@@ -198,6 +182,7 @@ def start_graph_server(host: str, port: int) -> None:
             conn.close()
             return JSONResponse({"actions": actions})
         except Exception as e:
+            logger.exception("Graph actions API request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     async def graph_events(request: Request):
@@ -227,7 +212,7 @@ def start_graph_server(host: str, port: int) -> None:
                     last_count = current_count
                     last_modified = current_modified
                 except Exception:
-                    pass
+                    logger.debug("SSE graph change poll failed", exc_info=True)
 
                 await asyncio.sleep(2)  # Check every 2 seconds
 
@@ -259,6 +244,7 @@ def start_graph_server(host: str, port: int) -> None:
             conn.close()
             return JSONResponse({"ok": True})
         except Exception as e:
+            logger.exception("Graph favorite patch API request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     async def r2_image_proxy(request: Request):
@@ -288,9 +274,11 @@ def start_graph_server(host: str, port: int) -> None:
                     headers={"Cache-Control": "public, max-age=86400"},
                 )
             except Exception as e:
+                logger.debug("R2 image proxy could not load key '%s': %s", key, e)
                 return JSONResponse({"error": f"Image not found: {e}"}, status_code=404)
 
         except Exception as e:
+            logger.exception("R2 image proxy request failed: %s", e)
             return JSONResponse({"error": str(e)}, status_code=500)
 
     app = Starlette(
@@ -324,7 +312,7 @@ def start_graph_server(host: str, port: int) -> None:
         if hasattr(STORAGE_BACKEND, 'bucket'):
             bucket_name = STORAGE_BACKEND.bucket
     except Exception:
-        pass
+        logger.debug("Unable to include bucket param in graph URL", exc_info=True)
 
     bucket_param = f"?bucket={bucket_name}" if bucket_name else ""
     print(f"Graph visualization available at http://{host}:{port}/graph{bucket_param}", file=sys.stderr)

@@ -172,7 +172,7 @@ Add to `~/.codex/config.toml`:
 | `MEMORA_TAG_FILE`      | Path to file containing allowed tags (one per line)                        |
 | `MEMORA_TAGS`          | Comma-separated list of allowed tags                                       |
 | `MEMORA_GRAPH_PORT`    | Port for the knowledge graph visualization server (default: `8765`)        |
-| `MEMORA_EMBEDDING_MODEL` | Embedding backend: `tfidf` (default), `sentence-transformers`, or `openai` |
+| `MEMORA_EMBEDDING_MODEL` | Embedding backend: `openai` (default), `sentence-transformers`, or `tfidf` |
 | `SENTENCE_TRANSFORMERS_MODEL` | Model for sentence-transformers (default: `all-MiniLM-L6-v2`)        |
 | `OPENAI_API_KEY`       | API key for OpenAI embeddings and LLM deduplication                        |
 | `OPENAI_BASE_URL`      | Base URL for OpenAI-compatible APIs (OpenRouter, Azure, etc.)              |
