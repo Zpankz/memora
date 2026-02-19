@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Memory Knowledge Graph</title>
+    <title>Memora</title>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAgCAMAAADKfsO6AAACdlBMVEUSFSISFSERFSMSFiIRFSIRFiETFSISFiEUGCUUGCQTFyMQFCETFyQTFSMRFSEHCRQIChYQEyASFiMRFCELDhkVGCYKDBgMDxoQEx8UFyRMVWhCSlwZHCkPEh4TFiMOEBx0gpqwxeOMnrgyOUsOERyAj6nS6/+/1/RwgqEWGicRFCBVX3PR6v+90/GNp813jrIUFyU6QlPI4P+70e9ug6Zhe6Q4QVYLDRgRFiIQEh+dsMvQ6f9mcYdOYH+En8gwOU51gpjV7/+Glq5ATml/msNGU2wLDhouNEO/1vXB2PcmKjdATWh/m8RMW3efsczS7P9PWGo6RV2Qq9VSYn0LDBcGCRRPWGvP5/+ludUNDxs6Rl11j7dtgKK5zuzC2vooLTtCTmaYs91YZ4MKCxcTGCQGBxJmcojU7v+MnbcEBQ83QVhrha2EnL/G3v6twuAREx5NWnObt+FWZH8KCxYVGCUHBxN1g5p8i6MBAgs0PVNfd6KRp8nL4/+Ro74CAgxXZoCfu+RRXncHCBN2hJvV7v93hZ0EBA8iKDh4jrTC2/jU7f9bZnwAAAhfbomkwOlMWXEJChUUGSUFBhJqdoza9P9+jqYIChU4Pk5vfJRgbIIWGSZgb4qqxe5MWG8LDBg4P1C90/Ogs84EBhFPWnG51f5RXXQICRQNEBwcIS42PE1+j61mdI4PEh8KDRgQEh4iJzYSFSMOER0WGCUPEx8UFiM7QlNqdYtdZ3tmcIVgan9jboJcZntYYnc5Q1k3QFkpMUUOERssMUBCSVtRWm0/Rlg3PU1FTF9LVGgnLT8uNk0lKz4PEh0SFCISFCEOEh4MDhoNER0TFiK8bZaBAAAB6ElEQVQoz2NggAJGBiZGGAtEMMLYQBaEZIbyIQQLK5QJkmNkAdEsYC4LMwMjGwOSUSxIbCjFzgIXgJmArAPIZ2dAEWfm4GRmhBnFyMLGxc3DxcLLxy8gKARWwcbAwsggLCIqJs4jISklLSMrBzWPmVleQVFJWUVcVU1dQ1OLGWIBB7+2jq6evoGhkbGJqZk5D4MFWKmllbWNrZ29g6OTs4srUBQEeNzcPTy9vH18/fwDAoOCQ3ggBoSGhUdERkXHxMbFJyQmJaeARUVT09IzMrOyc3Lz8gsKi4o5wK4tKS1zLK+orKquqa2rb2gsNgCbW9LU3NLa1t7R2dXd09vXP4ETLDpx0uQpU6dJTJ8xcxb/7Dlzp3GA3Ss5b/6ChbJybov4JactXrJ0GQczOELklq9YWSLMM5GDWZhh1eomDkgksHCtWcvHwMDKyCi0Zt16rQ2wcBXiAsUawwY+ZuaNzKxgc2GBzgI2TggqApFjBoYHM9AedngcMTBoMTDwaTHzsfIhRxXfpjWb+WbJMghv0YIlCAZJka3btu/YuWv3nr379h+Qg6amLRsPbj10+MjRY8dPnDx1Wo4BnKLOnGU+J3/ebfkFt8jT6yQYIIKgCBWSAwEeLiG5i2ch+kEpgBkowwZSw8wGFgMApilop78uh+wAAAAASUVORK5CYII=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
@@ -26,7 +27,7 @@ div.vis-tooltip {
     max-width: 320px;
     white-space: pre-wrap;
 }
-#panel { width: 450px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; display: none; position: relative; }
+#panel { width: 560px; background: #161b22; border-left: 1px solid #30363d; padding: 20px; overflow-y: auto; display: none; position: relative; }
 #panel.active { display: block; }
 #panel h2 { color: #58a6ff; margin-bottom: 10px; font-size: 16px; }
 #panel .tags { margin-bottom: 15px; }
@@ -174,15 +175,18 @@ div.vis-tooltip {
     font-size: 9px;
     color: #6e7681;
 }
+#sidebar-toggle { position: absolute; top: 10px; left: 10px; width: 32px; height: 32px; border-radius: 6px; background: rgba(22,27,34,0.95); border: 1px solid #30363d; color: #8b949e; font-size: 16px; cursor: pointer; z-index: 50; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+#sidebar-toggle:hover { color: #c9d1d9; background: rgba(33,38,45,0.95); }
+#sidebar-toggle.open { background: rgba(22,27,34,0.95); border-color: #8b949e; }
+#sidebar-wrapper { position: absolute; top: 48px; left: 10px; z-index: 40; transform: translateX(-100%); opacity: 0; transition: transform 0.25s ease, opacity 0.2s ease; pointer-events: none; }
+#sidebar-wrapper.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
 #legend {
-    position: absolute;
-    top: 10px;
-    left: 10px;
     background: rgba(22,27,34,0.95);
     padding: 12px;
     border-radius: 6px;
     font-size: 12px;
     border-left: 3px solid #8b949e;
+    margin-bottom: 8px;
 }
 #legend > b { color: #c9d1d9; }
 .legend-item { margin: 4px 0; display: flex; align-items: center; cursor: pointer; padding: 2px 4px; border-radius: 4px; }
@@ -205,9 +209,6 @@ div.vis-tooltip {
     font-size: 10px;
 }
 #sections {
-    position: absolute;
-    bottom: 50px;
-    left: 10px;
     background: rgba(22,27,34,0.95);
     padding: 12px;
     border-radius: 0 6px 6px 0;
@@ -360,10 +361,10 @@ div.vis-tooltip {
     opacity: 1;
 }
 /* Chat panel */
-#chat-toggle { position: fixed; bottom: 20px; right: 20px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #238636 0%, #2ea043 100%); border: none; color: #fff; font-size: 22px; cursor: pointer; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+#chat-toggle { position: fixed; bottom: 20px; left: 20px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #238636 0%, #2ea043 100%); border: none; color: #fff; font-size: 22px; cursor: pointer; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 #chat-toggle:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(0,0,0,0.5); }
 #chat-toggle.hidden { display: none; }
-#chat-panel { position: fixed; bottom: 0; right: 20px; width: 520px; height: 480px; background: #161b22; border: 1px solid #30363d; border-bottom: none; border-radius: 12px 12px 0 0; z-index: 200; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -4px 20px rgba(0,0,0,0.4); }
+#chat-panel { position: fixed; bottom: 0; left: 20px; width: 520px; height: 480px; background: #161b22; border: 1px solid #238636; border-bottom: none; border-radius: 12px 12px 0 0; z-index: 200; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -4px 20px rgba(35,134,54,0.3); }
 #chat-panel.open { transform: translateY(0); }
 #chat-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #30363d; flex-shrink: 0; cursor: pointer; }
 #chat-header:hover { background: #1c2128; }
@@ -443,8 +444,11 @@ div.vis-tooltip {
             <div id="history-list"></div>
         </div>
     </div>
-    <div id="legend"><b>Tags</b><span class="legend-toggle" onclick="toggleTags()">[+]</span><div id="legend-items"></div><div id="issues-legend-items"></div><div id="todos-legend-items"></div><div id="duplicates-legend-items"></div><div class="reset" onclick="resetFilter()">Show All</div></div>
-    <div id="sections"><b>Sections</b><div id="section-items"></div></div>
+    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle tags & sections">&#9776;</button>
+    <div id="sidebar-wrapper">
+        <div id="legend"><b>Tags</b><span class="legend-toggle" onclick="toggleTags()">[+]</span><div id="legend-items"></div><div id="issues-legend-items"></div><div id="todos-legend-items"></div><div id="duplicates-legend-items"></div><div class="reset" onclick="resetFilter()">Show All</div></div>
+        <div id="sections"><b>Sections</b><div id="section-items"></div></div>
+    </div>
     <div id="timeline-container" style="display:none;">
         <div id="timeline-label">
             <span class="title">Timeline</span>
@@ -1176,8 +1180,16 @@ div.vis-tooltip {
             // Focus and highlight the node + connected nodes in the graph
             if (typeof network !== 'undefined' && network && nodes && nodes.get(memId)) {
                 focusOnNode(memId);
-                network.focus(memId, { scale: 0.7, animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
-                network.selectNodes([memId]);
+                // Wait for DOM reflow so vis.js sees the updated canvas size after panel opens
+                requestAnimationFrame(function() {
+                    network.redraw();
+                    // Only compensate for left-side overlays (chat panel covers left of canvas)
+                    var chatW = document.getElementById('chat-panel').classList.contains('open') ? 540 : 0;
+                    var sidebarW = document.getElementById('sidebar-wrapper').classList.contains('open') ? (document.getElementById('sidebar-wrapper').offsetWidth + 10) : 0;
+                    var leftObscured = Math.max(chatW, sidebarW);
+                    network.focus(memId, { scale: 0.7, offset: { x: leftObscured / 2, y: 0 }, animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+                    network.selectNodes([memId]);
+                });
             }
             if (memoryCache[memId]) {
                 showPanel(memoryCache[memId]);
@@ -1380,7 +1392,7 @@ div.vis-tooltip {
             var panel = document.getElementById('panel');
             var panelOpen = panel && panel.classList.contains('active');
             if (panelOpen) {
-                var panelWidth = panel.offsetWidth || 450;
+                var panelWidth = panel.offsetWidth || 560;
                 timeline.style.left = 'calc(50% - ' + (panelWidth / 2) + 'px)';
             } else {
                 timeline.style.left = '50%';
@@ -1688,6 +1700,14 @@ div.vis-tooltip {
                     var nodeId = params.nodes[0];
                     focusOnNode(nodeId);
                     await showMemoryAsync(nodeId);
+                    // Panel opened and canvas may have shrunk — re-center the node
+                    requestAnimationFrame(function() {
+                        network.redraw();
+                        var chatW = document.getElementById('chat-panel').classList.contains('open') ? 540 : 0;
+                        var sidebarW = document.getElementById('sidebar-wrapper').classList.contains('open') ? (document.getElementById('sidebar-wrapper').offsetWidth + 10) : 0;
+                        var leftObscured = Math.max(chatW, sidebarW);
+                        network.focus(nodeId, { scale: network.getScale(), offset: { x: leftObscured / 2, y: 0 }, animation: { duration: 300, easingFunction: 'easeInOutQuad' } });
+                    });
                 } else {
                     exitFocusMode();
                 }
@@ -1996,6 +2016,14 @@ div.vis-tooltip {
         var chatStreaming = false;
         var chatWelcomeShown = false;
 
+        function toggleSidebar() {
+            var wrapper = document.getElementById('sidebar-wrapper');
+            var btn = document.getElementById('sidebar-toggle');
+            wrapper.classList.toggle('open');
+            btn.classList.toggle('open');
+            btn.innerHTML = wrapper.classList.contains('open') ? '&#x2715;' : '&#9776;';
+        }
+
         function toggleChat() {
             chatOpen = !chatOpen;
             var panel = document.getElementById('chat-panel');
@@ -2135,8 +2163,7 @@ div.vis-tooltip {
                 if (references.length > 0) {
                     var refsDiv = document.createElement('div');
                     refsDiv.className = 'chat-refs';
-                    for (var j = 0; j < references.length; j++) {
-                        var ref = references[j];
+                    references.forEach(function(ref) {
                         var refLink = document.createElement('span');
                         refLink.className = 'chat-ref';
                         refLink.textContent = '#' + ref.id;
@@ -2145,7 +2172,7 @@ div.vis-tooltip {
                             return function() { showMemoryDetails(id); };
                         })(ref.id);
                         refsDiv.appendChild(refLink);
-                    }
+                    });
                     assistantDiv.appendChild(refsDiv);
                 }
 
