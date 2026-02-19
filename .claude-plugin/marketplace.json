@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "memora",
+  "description": "Persistent memory and knowledge management for Claude Code",
+  "owner": {
+    "name": "Zpankz",
+    "email": ""
+  },
+  "metadata": {
+    "description": "Memora MCP memory server plugin marketplace",
+    "version": "1.0.0",
+    "pluginRoot": "."
+  },
+  "plugins": [
+    {
+      "name": "memora",
+      "source": "./claude-plugin",
+      "description": "Persistent memory and knowledge management. Auto-injects context at session start, captures significant actions, and provides 31 memory tools via MCP.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Zpankz"
+      },
+      "category": "memory",
+      "tags": ["memory", "knowledge-graph", "context", "persistence", "sqlite"]
+    }
+  ]
+}

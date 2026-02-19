@@ -49,11 +49,13 @@ EXCLUDED_PREFIXES = ["mcp__memora__"]
 
 
 def load_memora_env() -> dict:
-    """Load memora environment variables from .mcp.json if available."""
+    """Load memora environment variables from .mcp.json if available.
+
+    Searches standard locations only (no hardcoded user paths).
+    """
     search_paths = [
-        Path.home() / "repos" / "agentic-mcp-tools" / ".mcp.json",
-        Path.home() / ".mcp.json",
         Path.cwd() / ".mcp.json",
+        Path.home() / ".mcp.json",
     ]
     env_vars = {}
     for mcp_path in search_paths:
@@ -79,20 +81,16 @@ def is_enabled(env_vars: dict) -> bool:
 
 
 def get_memora_storage():
-    """Import and return memora storage module."""
+    """Import and return memora storage module.
+
+    Relies on memora being installed in the Python environment.
+    The run-hook.sh wrapper handles finding the right Python.
+    """
     try:
         from memora import storage
         return storage
     except ImportError:
-        memora_path = Path.home() / "repos" / "agentic-mcp-tools" / "memora"
-        if memora_path.exists():
-            sys.path.insert(0, str(memora_path))
-            try:
-                from memora import storage
-                return storage
-            except Exception:
-                return None
-    return None
+        return None
 
 
 def is_excluded_tool(tool_name: str) -> bool:

@@ -1,5 +1,15 @@
 {
-  "name": "memora-context",
-  "version": "0.1.0",
-  "description": "Inject relevant memories from Memora at session start"
+  "name": "memora",
+  "version": "0.3.0",
+  "description": "Persistent memory and knowledge management for Claude Code. Auto-injects relevant context at session start, captures significant actions, and provides 31 memory tools via MCP.",
+  "author": {
+    "name": "Zpankz",
+    "url": "https://github.com/Zpankz"
+  },
+  "repository": "https://github.com/Zpankz/memora",
+  "license": "MIT",
+  "keywords": ["memory", "knowledge-graph", "context", "persistence", "sqlite"],
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills"
 }

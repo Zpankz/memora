@@ -9,6 +9,7 @@ config/allowed_tags.json
 
 # Local config
 .mcp.json
+!claude-plugin/.mcp.json
 
 # Vendored libs
 lib/

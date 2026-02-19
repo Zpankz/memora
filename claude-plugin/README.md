@@ -1,38 +1,96 @@
-# Memora Context Plugin for Claude Code
+# Memora Plugin for Claude Code
 
-Automatically injects relevant memories from Memora at session start.
-
-## What it does
-
-When you start a Claude Code session, this plugin:
-1. Loads memora config from `.mcp.json` (supports cloud storage)
-2. Extracts the project name from your working directory
-3. Searches Memora for related memories
-4. Injects relevant context into the session
+Persistent memory and knowledge management. Auto-injects relevant context at session start, captures significant actions (git commits, test results, research), and provides 31 memory tools via MCP.
 
 ## Installation
 
-Symlink or copy to Claude Code plugins directory:
+### From marketplace (recommended)
 
 ```bash
-# Option 1: Symlink (recommended for development)
-ln -s ~/repos/agentic-mcp-tools/memora/claude-plugin ~/.claude/plugins/memora-context
+# Add the marketplace
+/plugin marketplace add Zpankz/memora
 
-# Option 2: Copy
-cp -r ~/repos/agentic-mcp-tools/memora/claude-plugin ~/.claude/plugins/memora-context
+# Install the plugin
+/plugin install memora@Zpankz/memora
 ```
 
-Restart Claude Code after installation.
+### Local development
 
-## Requirements
+```bash
+claude --plugin-dir ./claude-plugin
+```
 
-- Memora with dependencies installed (venv at `~/repos/agentic-mcp-tools/.venv`)
-- `.mcp.json` with memora server config (for cloud storage env vars)
-- Claude Code with plugin support
+## Prerequisites
+
+Memora must be installed in a Python environment discoverable by the plugin:
+
+```bash
+# Option 1: pip install (recommended)
+pip install git+https://github.com/Zpankz/memora
+
+# Option 2: uv tool install
+uv tool install git+https://github.com/Zpankz/memora
+```
+
+The plugin's hook runner (`scripts/run-hook.sh`) will automatically discover memora in your system Python or via `uv run`.
+
+## What's included
+
+| Component | Description |
+|-----------|-------------|
+| `.mcp.json` | Auto-registers the memora MCP server (31 tools) |
+| `hooks/hooks.json` | SessionStart context injection + PostToolUse auto-capture |
+| `skills/memora/` | Skill for proactive memory search and management |
+| `scripts/` | Portable hook handlers with Python discovery |
 
 ## Configuration
 
-The hook:
-- Runs with a 5-second timeout to avoid blocking session start
-- Loads env vars from `.mcp.json` to connect to same database as MCP server
-- Searches for top 5 memories with minimum relevance score of 0.02
+### Environment variables
+
+Set these in your shell or in `.mcp.json` env section:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MEMORA_EMBEDDING_MODEL` | `tfidf` | Embedding backend (`tfidf`, `openai`, `local`) |
+| `MEMORA_AUTO_CAPTURE` | `false` | Enable PostToolUse auto-capture |
+| `OPENAI_API_KEY` | — | Required only if using `openai` embeddings |
+| `MEMORA_DB_PATH` | `~/.memora/memora.db` | SQLite database location |
+
+### Overriding MCP server config
+
+To use OpenAI embeddings or enable the graph visualization, override in your project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "memora": {
+      "command": "memora-server",
+      "args": [],
+      "env": {
+        "MEMORA_EMBEDDING_MODEL": "openai",
+        "OPENAI_API_KEY": "sk-...",
+        "MEMORA_GRAPH_PORT": "8765"
+      }
+    }
+  }
+}
+```
+
+## Plugin structure
+
+```
+claude-plugin/
+├── .claude-plugin/
+│   └── plugin.json        # Plugin manifest
+├── .mcp.json              # MCP server configuration
+├── hooks/
+│   └── hooks.json         # Hook event configuration
+├── scripts/
+│   ├── run-hook.sh        # Portable Python discovery wrapper
+│   ├── session_start.py   # SessionStart hook handler
+│   └── post_tool_use.py   # PostToolUse hook handler
+├── skills/
+│   └── memora/
+│       └── SKILL.md       # Memory management skill
+└── README.md
+```

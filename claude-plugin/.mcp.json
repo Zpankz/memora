@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "memora": {
+      "command": "memora-server",
+      "args": ["--no-graph"],
+      "env": {
+        "MEMORA_EMBEDDING_MODEL": "tfidf"
+      }
+    }
+  }
+}
