@@ -1168,7 +1168,11 @@ div.vis-tooltip {
 
         function showMemoryDetails(memId) {
             memId = parseInt(memId, 10);
+            // Open the right panel immediately
+            document.getElementById('panel').classList.add('active');
+            document.getElementById('resize-handle').classList.add('active');
             switchTab('detail');
+            document.getElementById('panel-title').textContent = 'Memory #' + memId;
             // Focus and highlight the node + connected nodes in the graph
             if (typeof network !== 'undefined' && network && nodes && nodes.get(memId)) {
                 focusOnNode(memId);
