@@ -3,6 +3,7 @@
 import asyncio
 import functools
 import logging
+import os
 import socket
 import sys
 import threading
@@ -352,8 +353,9 @@ def start_graph_server(host: str, port: int) -> None:
 
                 def run_llm():
                     try:
+                        chat_model = os.getenv("CHAT_MODEL", "") or LLM_MODEL
                         stream = client.chat.completions.create(
-                            model=LLM_MODEL,
+                            model=chat_model,
                             messages=messages,
                             stream=True,
                             temperature=0.7,

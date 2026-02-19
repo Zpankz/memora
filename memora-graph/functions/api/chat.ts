@@ -278,7 +278,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
   }
 
   const history = body.history || [];
-  const model = env.CHAT_MODEL || "openai/gpt-4o-mini";
+  const model = env.CHAT_MODEL || "deepseek/deepseek-chat";
   const embeddingModel = env.EMBEDDING_MODEL || "openai/text-embedding-3-small";
 
   // Search for relevant memories using semantic + keyword search
