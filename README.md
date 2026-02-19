@@ -18,7 +18,7 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 </p>
 
 <p align="center">
-<b><a href="#features">Features</a></b> · <b><a href="#install">Install</a></b> · <b><a href="#usage">Usage</a></b> · <b><a href="#configuration">Config</a></b> · <b><a href="#live-graph-server">Live Graph</a></b> · <b><a href="#cloud-graph">Cloud Graph</a></b> · <b><a href="#semantic-search--embeddings">Semantic Search</a></b> · <b><a href="#llm-deduplication">LLM Dedup</a></b> · <b><a href="#memory-linking">Linking</a></b> · <b><a href="#neovim-integration">Neovim</a></b>
+<b><a href="#features">Features</a></b> · <b><a href="#install">Install</a></b> · <b><a href="#usage">Usage</a></b> · <b><a href="#configuration">Config</a></b> · <b><a href="#live-graph-server">Live Graph</a></b> · <b><a href="#cloud-graph">Cloud Graph</a></b> · <b><a href="#chat-with-memories">Chat</a></b> · <b><a href="#semantic-search--embeddings">Semantic Search</a></b> · <b><a href="#llm-deduplication">LLM Dedup</a></b> · <b><a href="#memory-linking">Linking</a></b> · <b><a href="#neovim-integration">Neovim</a></b>
 </p>
 
 ## Features
@@ -39,6 +39,7 @@ A lightweight MCP server for semantic memory storage, knowledge graphs, and cros
 - ⚡ **Memory Automation** - Structured tools for TODOs, issues, and sections
 - 🕸️ **Knowledge Graph** - Interactive visualization with Mermaid rendering and cluster overlays
 - 🌐 **Live Graph Server** - Built-in HTTP server with cloud-hosted option (D1/Pages)
+- 💬 **Chat with Memories** - RAG-powered chat panel that searches relevant memories and streams LLM responses
 - 📡 **Event Notifications** - Poll-based system for inter-agent communication
 - 📊 **Statistics & Analytics** - Tag usage, trends, and connection insights
 - 🧠 **Memory Insights** - Activity summary, stale detection, consolidation suggestions, and LLM-powered pattern analysis
@@ -179,6 +180,7 @@ Add to `~/.codex/config.toml`:
 | `OPENAI_EMBEDDING_MODEL` | OpenAI embedding model (default: `text-embedding-3-small`)               |
 | `MEMORA_LLM_ENABLED`   | Enable LLM-powered deduplication comparison (`true`/`false`, default: `true`) |
 | `MEMORA_LLM_MODEL`     | Model for deduplication comparison (default: `gpt-4o-mini`)                |
+| `CHAT_MODEL`           | Model for the chat panel (default: `deepseek/deepseek-chat`, falls back to `MEMORA_LLM_MODEL`) |
 | `AWS_PROFILE`          | AWS credentials profile from `~/.aws/credentials` (useful for R2)          |
 | `AWS_ENDPOINT_URL`     | S3-compatible endpoint for R2/MinIO                                        |
 | `R2_PUBLIC_DOMAIN`     | Public domain for R2 image URLs                                            |
@@ -251,6 +253,7 @@ To disable: add `"--no-graph"` to args in your MCP config.
 - **Details Panel** - View memory content, metadata, tags, and related memories
 - **Timeline Panel** - Browse memories chronologically, click to highlight in graph
 - **History Panel** - Action log of all operations with grouped consecutive entries and clickable memory references (deleted memories shown as strikethrough)
+- **Chat Panel** - Ask questions about your memories using RAG-powered LLM chat with streaming responses and clickable `[Memory #ID]` references
 - **Time Slider** - Filter memories by date range, drag to explore history
 - **Real-time Updates** - Graph, timeline, and history update via SSE when memories change
 - **Filters** - Tag/section dropdowns, zoom controls
@@ -315,6 +318,27 @@ When using Cloudflare D1 as your database, the graph visualization is hosted on 
 4. Pages → Settings → Enable Access Policy
 
 See [`memora-graph/`](memora-graph/) for detailed setup and multi-database configuration.
+
+</details>
+
+<details id="chat-with-memories">
+<summary><big><big><strong>Chat with Memories</strong></big></big></summary>
+
+Ask questions about your knowledge base directly from the graph UI. The chat panel uses RAG (Retrieval-Augmented Generation) to search relevant memories and stream LLM responses.
+
+- **Toggle** via the floating chat icon at bottom-right
+- **Semantic search** finds the most relevant memories as context
+- **Streaming responses** with clickable `[Memory #ID]` references that focus the graph node
+- Works on both the local server and Cloudflare Pages deployment
+
+**Configure the chat model:**
+
+| Backend | Variable | Default |
+|---------|----------|---------|
+| Local server | `CHAT_MODEL` env var | Falls back to `MEMORA_LLM_MODEL` |
+| Cloudflare Pages | `CHAT_MODEL` in `wrangler.toml` | `deepseek/deepseek-chat` |
+
+Requires an OpenAI-compatible API (`OPENAI_API_KEY` + `OPENAI_BASE_URL` for local, `OPENROUTER_API_KEY` secret for Cloudflare).
 
 </details>
 
