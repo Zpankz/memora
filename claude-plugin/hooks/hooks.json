@@ -21,6 +21,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-hook.sh ${CLAUDE_PLUGIN_ROOT}/scripts/stop_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

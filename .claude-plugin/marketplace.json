@@ -15,13 +15,13 @@
     {
       "name": "memora",
       "source": "./claude-plugin",
-      "description": "Persistent memory and knowledge management. Auto-injects context at session start, captures significant actions, and provides 31 memory tools via MCP.",
-      "version": "0.3.0",
+      "description": "Persistent memory and knowledge management. Auto-injects context, captures actions, provides 31 MCP tools, 10 slash commands, 2 agents, and session lifecycle hooks.",
+      "version": "0.4.0",
       "author": {
         "name": "Zpankz"
       },
       "category": "memory",
-      "tags": ["memory", "knowledge-graph", "context", "persistence", "sqlite"]
+      "tags": ["memory", "knowledge-graph", "context", "persistence", "sqlite", "agents", "skills"]
     }
   ]
 }
